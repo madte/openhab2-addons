@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="coap"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+        xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+    <!-- Sample Thing Type -->
+    <thing-type id="coapdevice">
+        <label>CoAP Binding Thing</label>
+        <description>Sample thing for CoAP Binding</description>
+
+        <channels>
+            <channel id="led1"      typeId="led"/>
+            <channel id="led2"      typeId="led"/>
+            <channel id="string1"   typeId="string"/>
+        </channels>
+        <config-description>
+        <parameter name="location" type="text" required="true">
+            <label>Location</label>
+            <description>Physical thing location
+            </description>
+        </parameter>
+        <parameter name="refresh" type="integer" min="1">
+            <label>Refresh interval</label>
+            <description>Specifies the refresh interval in seconds.</description>
+            <default>60</default>
+        </parameter>
+    </config-description>
+    </thing-type>
+
+    <!-- Sample Channel Type -->
+    <channel-type id="led">
+        <item-type>Switch</item-type>
+        <label>Led </label>
+        <description>Led  channel</description>
+    </channel-type>
+    <channel-type id="string">
+        <item-type>String</item-type>
+        <label>String </label>
+        <description>String channel</description>
+    </channel-type>
+    
+</thing:thing-descriptions>
