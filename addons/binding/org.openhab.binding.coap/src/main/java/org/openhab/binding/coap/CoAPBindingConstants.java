@@ -20,10 +20,16 @@ public class CoAPBindingConstants {
     public static final String BINDING_ID = "coap";
 
     // List of all Thing Type UIDs
-    public final static ThingTypeUID THING_TYPE_SAMPLE = new ThingTypeUID(BINDING_ID, "coapdevice");
+    public final static ThingTypeUID THING_TYPE_COAP = new ThingTypeUID(BINDING_ID, "coapdevice");
 
     // List of all Channel ids
     public final static String CHANNEL_LED1 = "led1";
     public final static String CHANNEL_LED2 = "led2";
     public final static String CHANNEL_STRING1 = "string1";
+
+    // List of configuration keys
+    public final static String CONFIG_DTLSENABLED_KEY = "enableDtls";
+    public final static String CONFIG_IP_KEY = "ip";
+    public final static String CONFIG_lOCATION_KEY = "location";
+
 }

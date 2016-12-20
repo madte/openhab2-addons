@@ -9,12 +9,25 @@
         <label>CoAP Binding Thing</label>
         <description>Sample thing for CoAP Binding</description>
 
+<!--  
         <channels>
-            <channel id="led1"      typeId="led"/>
-            <channel id="led2"      typeId="led"/>
+            <channel id="led1"      typeId="switch"/>
+            <channel id="led2"      typeId="switch"/>
             <channel id="string1"   typeId="string"/>
         </channels>
+-->
+
         <config-description>
+        <parameter name="ip" type="text" required="true">
+            <label>IP</label>
+            <description>IP of the CoAP thing (or hostname)
+            </description>
+        </parameter>
+        <parameter name="enableDtls" type="text" required="true">
+            <label>DTLS enabled</label>
+            <description> To enable DTLS set true, else false
+            </description>
+        </parameter>
         <parameter name="location" type="text" required="true">
             <label>Location</label>
             <description>Physical thing location
@@ -28,11 +41,11 @@
     </config-description>
     </thing-type>
 
-    <!-- Sample Channel Type -->
-    <channel-type id="led">
+    <!-- Supported Channel Types -->
+    <channel-type id="switch">
         <item-type>Switch</item-type>
-        <label>Led </label>
-        <description>Led  channel</description>
+        <label>Switch </label>
+        <description>Switch channel</description>
     </channel-type>
     <channel-type id="string">
         <item-type>String</item-type>

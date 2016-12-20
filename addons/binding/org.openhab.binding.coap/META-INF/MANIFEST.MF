@@ -5,7 +5,10 @@ Bundle-SymbolicName: org.openhab.binding.coap;singleton:=true
 Bundle-Vendor: openHAB
 Bundle-Version: 2.0.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Bundle-ClassPath: ., lib/californium-core-1.0.4.jar, lib/element-connector-1.0.4.jar
+Bundle-ClassPath: .,
+ lib/californium-core-1.0.4.jar,
+ lib/element-connector-1.0.4.jar,
+ lib/scandium-1.0.4.jar
 Import-Package: 
  org.openhab.binding.coap,
  org.openhab.binding.coap.handler,
@@ -20,3 +23,4 @@ Import-Package:
 Service-Component: OSGI-INF/*.xml
 Export-Package: org.openhab.binding.coap,
  org.openhab.binding.coap.handler
+Require-Bundle: org.eclipse.smarthome.core

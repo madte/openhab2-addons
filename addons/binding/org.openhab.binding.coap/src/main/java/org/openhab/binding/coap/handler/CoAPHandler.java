@@ -18,7 +18,10 @@ import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.smarthome.config.core.Configuration;
+import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.StringType;
+import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -37,6 +40,9 @@ public class CoAPHandler extends BaseThingHandler {
 
     private Logger logger = LoggerFactory.getLogger(CoAPHandler.class);
 
+    private String thingUri = new String();
+    private Boolean dtlsEnabled = false;
+
     public CoAPHandler(Thing thing) {
         super(thing);
     }
@@ -48,28 +54,102 @@ public class CoAPHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
+        String response = new String();
 
-        if (channelUID.getId().equals(CHANNEL_LED1)) {
-            // TODO: handle command
+        if (command.toFullString().contentEquals("REFRESH")) {
+            return;
+        }
+        logger.info("handleCommand: On channel: " + channelUID.getId() + " command: " + command.toFullString());
+        putStringResource(thingUri + channelUID.getId(), channelUID.getId(), command.toFullString());
 
-            // Note: if communication with thing fails for some reason,
-            // indicate that by setting the status with detail information
-            // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-            // "Could not control device at IP address x.x.x.x");
+        /*
+         * if (channelUID.getId().equals(CHANNEL_LED1)) {
+         * // TODO: handle command
+         *
+         * // Note: if communication with thing fails for some reason,
+         * // indicate that by setting the status with detail information
+         * // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+         * // "Could not control device at IP address x.x.x.x");
+         *
+         * putStringResource(thingUri + "led1", channelUID.getId(), command.toFullString());
+         */
+        /*
+         * if (command.toFullString().equals("ON")) {
+         * response = "1";
+         * } else {
+         * response = "0";
+         * }
+         * putStringResource("coap://[2001:db8::225:19ff:fe64:c216]:5683/lights/led3", channelUID.getId(),
+         * response);
+         */
+        /*
+         * } else if (channelUID.getId().equals(CHANNEL_LED2)) {
+         * putStringResource(thingUri + "led2", channelUID.getId(), command.toFullString());
+         *
+         * } else if (channelUID.getId().equals(CHANNEL_STRING1)) {
+         *
+         * }
+         */
+    }
 
-            putStringResource("coap://vs0.inf.ethz.ch:5683/test", channelUID.getId(), command.toFullString());
-        } else if (channelUID.getId().equals(CHANNEL_LED2)) {
+    private String buildCoapThingUri(String _hostname) {
 
-        } else if (channelUID.getId().equals(CHANNEL_STRING1)) {
+        String uriTemp = new String();
 
+        if (dtlsEnabled.booleanValue()) {
+            uriTemp = "coaps://" + _hostname + ":5684/";
+        } else {
+            uriTemp = "coap://" + _hostname + ":5683/";
+        }
+        return uriTemp;
+    }
+
+    private void readThingConfiguration() {
+        // TODO validate configuration
+        boolean validConfig = true;
+        Configuration conf = this.getConfig();
+
+        if (conf.containsKey(CONFIG_DTLSENABLED_KEY)) {
+            dtlsEnabled = Boolean.parseBoolean(conf.get(CONFIG_DTLSENABLED_KEY).toString());
+        } else {
+            validConfig = false;
+        }
+
+        if (conf.containsKey(CONFIG_IP_KEY)) {
+            thingUri = buildCoapThingUri(conf.get(CONFIG_IP_KEY).toString());
+        } else {
+            validConfig = false;
+        }
+
+        if (validConfig) {
+            logger.info("Thing Configuration read successful");
+        } else {
+            logger.info("Thing Configuration read failed");
         }
     }
 
     @Override
     public void initialize() {
 
-        observeStringResource("coap://vs0.inf.ethz.ch:5683/obs", CHANNEL_STRING1);
+        // observeStringResource("coap://localhost:5683/string1", CHANNEL_STRING1);
 
+        readThingConfiguration();
+        String temp = new String();
+
+        // update channel states
+        for (Channel channel : getThing().getChannels()) {
+            // updateChannelState(channel.getUID());
+            // temp = channel.getLabel(); // Led1
+            // temp = channel.getUID().getId();// led1
+            // temp = channel.getAcceptedItemType();// Switch
+            // channel.get
+            observeResource(thingUri + channel.getUID().getId(), channel.getUID().getId(),
+                    channel.getAcceptedItemType());
+        }
+
+        // observeStringResource("coap://[2001:db8::225:19ff:fe64:c216]:5683/lights/led3", CHANNEL_STRING1);
+
+        // CoAPClient
         // TODO: Initialize the thing. If done set status to ONLINE to indicate proper working.
         // Long running initialization should be done asynchronously in background.
         updateStatus(ThingStatus.ONLINE);
@@ -82,7 +162,7 @@ public class CoAPHandler extends BaseThingHandler {
         // "Can not access device as username and/or password are invalid");
     }
 
-    private void observeStringResource(String uriString, String channel) {
+    private CoapObserveRelation observeResource(String uriString, String channel, String itemType) {
         URI uri = null; // URI parameter of the request
 
         try {
@@ -92,13 +172,21 @@ public class CoAPHandler extends BaseThingHandler {
         }
 
         CoapClient client = new CoapClient(uri);
-        logger.debug("Get URI:" + client.getURI());
+        logger.debug("Observing resource:" + client.getURI());
         CoapObserveRelation relation = client.observe(new CoapHandler() {
             @Override
             public void onLoad(CoapResponse response) {
+                logger.debug("Notification from: " + client.getURI());
+                logger.debug(Utils.prettyPrint(response));
                 String content = response.getResponseText();
-                logger.info("NOTIFICATION: " + content);
-                updateState(channel, StringType.valueOf(content));
+                if (itemType.contentEquals("String")) {
+                    logger.info("String resource: " + client.getURI() + " changed to: " + content);
+                    updateState(channel, StringType.valueOf(content));
+                } else if (itemType.contentEquals("Switch")) {
+                    logger.info("Switch resource: " + client.getURI() + " changed to: " + content);
+                    updateState(channel, OnOffType.valueOf(content));
+                }
+
             }
 
             @Override
@@ -106,6 +194,7 @@ public class CoAPHandler extends BaseThingHandler {
                 logger.info("OBSERVING FAILED");
             }
         });
+        return relation;
     }
 
     private void putStringResource(String uriString, String channel, String value) {
@@ -118,7 +207,8 @@ public class CoAPHandler extends BaseThingHandler {
         }
 
         CoapClient client = new CoapClient(uri);
-        logger.debug("PUT " + "'" + value + "' FROM Channel " + "'" + channel + "'" + " To URI: " + "'" + client.getURI() + "'");
+        logger.debug("PUT " + "'" + value + "' FROM Channel " + "'" + channel + "'" + " To URI: " + "'"
+                + client.getURI() + "'");
         CoapResponse response = client.put(value, MediaTypeRegistry.TEXT_PLAIN);
 
         if (response != null) {
