@@ -29,6 +29,8 @@ public class CoAPBindingConstants {
 
     // List of configuration keys
     public final static String CONFIG_DTLSENABLED_KEY = "enableDtls";
+    public final static String CONFIG_IDENTITY_KEY = "identity";
+    public final static String CONFIG_SECRET_KEY = "secret";
     public final static String CONFIG_IP_KEY = "ip";
     public final static String CONFIG_lOCATION_KEY = "location";
 

@@ -28,6 +28,16 @@
             <description> To enable DTLS set true, else false
             </description>
         </parameter>
+        <parameter name="identity" type="text">
+            <label>DTLS identity</label>
+            <description> Identity of the DTLS end-device (only needed when DTLS enabled)
+            </description>
+        </parameter>
+        <parameter name="secret" type="text">
+            <label>DTLS secret</label>
+            <description> Shared secret with DTLS end-device (only needed when DTLS enabled)
+            </description>
+        </parameter>
         <parameter name="location" type="text" required="true">
             <label>Location</label>
             <description>Physical thing location
