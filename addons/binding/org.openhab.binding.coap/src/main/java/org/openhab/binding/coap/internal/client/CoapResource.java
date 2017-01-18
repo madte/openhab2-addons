@@ -73,7 +73,7 @@ public class CoapResource {
             // this.dtlsConnector = new DTLSConnector(builder.build());
             // this.dtlsConnector = createDtlsConnector(_clientIdentity, _secretPsk); // TODO think about creating
             // dtlsConnector only once per thing
-            CoapResource.coapClient.setEndpoint(new CoapEndpoint(this.dtlsConnector, NetworkConfig.getStandard()));
+            this.coapClient.setEndpoint(new CoapEndpoint(this.dtlsConnector, NetworkConfig.getStandard()));
 
         } catch (GeneralSecurityException | IOException e) {
             System.err.println("Could not load the keystore");
@@ -95,7 +95,7 @@ public class CoapResource {
 
         try {
             this.uri = new URI(_uri);
-            CoapResource.coapClient = new CoapClient(uri);
+            this.coapClient = new CoapClient(uri);
         } catch (URISyntaxException e) {
             logger.debug("Invalid URI: " + e.getMessage());
             System.exit(-1); // TODO change to something more appropriate
@@ -104,7 +104,7 @@ public class CoapResource {
 
     public String readResource() {
 
-        CoapResponse response = CoapResource.coapClient.get();
+        CoapResponse response = this.coapClient.get();
 
         if (response != null) {
 
@@ -122,7 +122,7 @@ public class CoapResource {
 
     public Boolean writeResource(String _value) {
 
-        CoapResponse response = CoapResource.coapClient.put(_value, MediaTypeRegistry.TEXT_PLAIN);
+        CoapResponse response = this.coapClient.put(_value, MediaTypeRegistry.TEXT_PLAIN);
 
         if (response != null) {
 
@@ -156,7 +156,7 @@ public class CoapResource {
             }
         };
 
-        CoapResource.coapClient.observe(this.resourceHandler);
+        this.coapClient.observe(this.resourceHandler);
         return null;
     }
 
