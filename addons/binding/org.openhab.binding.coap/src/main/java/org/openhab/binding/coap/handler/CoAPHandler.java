@@ -116,13 +116,13 @@ public class CoAPHandler extends BaseThingHandler {
         }
 
         if (conf.containsKey(CONFIG_IDENTITY_KEY)) {
-            identity = buildCoapThingUri(conf.get(CONFIG_IDENTITY_KEY).toString());
+            identity = conf.get(CONFIG_IDENTITY_KEY).toString();
         } else {
             validConfig = false;
         }
 
         if (conf.containsKey(CONFIG_SECRET_KEY)) {
-            secret = buildCoapThingUri(conf.get(CONFIG_SECRET_KEY).toString());
+            secret = conf.get(CONFIG_SECRET_KEY).toString();
         } else {
             validConfig = false;
         }
@@ -145,14 +145,18 @@ public class CoAPHandler extends BaseThingHandler {
                 // temp = channel.getLabel(); // Led1
                 // temp = channel.getUID().getId();// led1
                 // temp = channel.getAcceptedItemType();// Switch
+                CoapResource newResource;
+
                 if (dtlsEnabled) {
-                    coapResourceList.add(new CoapResource(thingUri, channel.getUID().getId(),
-                            channel.getAcceptedItemType(), this, identity, secret));
+                    newResource = new CoapResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
+                            this, identity, secret);
                 } else {
-                    coapResourceList.add(
-                            new CoapResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(), this));
+                    newResource = new CoapResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
+                            this);
                 }
 
+                newResource.observeResource();
+                coapResourceList.add(newResource);
             }
 
             // observeStringResource("coap://[2001:db8::225:19ff:fe64:c216]:5683/lights/led3", CHANNEL_STRING1);

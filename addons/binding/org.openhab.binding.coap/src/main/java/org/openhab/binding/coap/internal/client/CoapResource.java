@@ -1,16 +1,12 @@
 package org.openhab.binding.coap.internal.client;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.PrivateKey;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.Utils;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
@@ -31,14 +27,12 @@ public class CoapResource {
     private CoapClient coapClient;
     private CoapHandler resourceHandler;
     private CoAPHandler coapHandler;
+    private CoapObserveRelation observeRelation;
 
     private String channelId;
     private String channelType;
 
     private URI uri;
-
-    private static final String KEY_STORE_PASSWORD = "endPass";
-    private static final String KEY_STORE_LOCATION = "certs/keyStore.jks";
 
     public CoapResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler) {
 
@@ -55,31 +49,20 @@ public class CoapResource {
 
         this(_uri, _channel, _type, _coapHandler);
         // load key store
-        KeyStore keyStore;
-        try {
-            keyStore = KeyStore.getInstance("JKS");
-            InputStream in = getClass().getClassLoader().getResourceAsStream(KEY_STORE_LOCATION);
-            keyStore.load(in, KEY_STORE_PASSWORD.toCharArray());
-            in.close();
+        StaticPskStore keyStore;
 
-            DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder(new InetSocketAddress(0));
-            builder.setPskStore(new StaticPskStore(_clientIdentity, _secretPsk.getBytes()));
-            builder.setIdentity((PrivateKey) keyStore.getKey("client", KEY_STORE_PASSWORD.toCharArray()),
-                    keyStore.getCertificateChain("client"), true);
-            dtlsConnector = new DTLSConnector(builder.build());
+        keyStore = new StaticPskStore(_clientIdentity, _secretPsk.getBytes());
+        DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder(new InetSocketAddress(0));
+        builder.setPskStore(keyStore);
 
-            // DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder(new InetSocketAddress(0));
-            // builder.setPskStore(new StaticPskStore(_clientIdentity, _secretPsk.getBytes()));
-            // this.dtlsConnector = new DTLSConnector(builder.build());
-            // this.dtlsConnector = createDtlsConnector(_clientIdentity, _secretPsk); // TODO think about creating
-            // dtlsConnector only once per thing
-            this.coapClient.setEndpoint(new CoapEndpoint(this.dtlsConnector, NetworkConfig.getStandard()));
+        dtlsConnector = new DTLSConnector(builder.build()); // TODO think about creating
+        // dtlsConnector only once per thing
+        this.coapClient.setEndpoint(new CoapEndpoint(this.dtlsConnector, NetworkConfig.getStandard()));
+    }
 
-        } catch (GeneralSecurityException | IOException e) {
-            System.err.println("Could not load the keystore");
-            e.printStackTrace();
-        }
-
+    @Override
+    public void finalize() {
+        cancelObserve();
     }
 
     /*
@@ -139,7 +122,7 @@ public class CoapResource {
         return true;
     }
 
-    private String observeResource() {
+    public String observeResource() {
 
         this.resourceHandler = new CoapHandler() {
             @Override
@@ -156,8 +139,12 @@ public class CoapResource {
             }
         };
 
-        this.coapClient.observe(this.resourceHandler);
+        this.observeRelation = this.coapClient.observe(this.resourceHandler);
         return null;
+    }
+
+    private void cancelObserve() {
+        this.observeRelation.proactiveCancel();
     }
 
     public String getChannelId() {
