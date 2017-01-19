@@ -34,6 +34,12 @@ public class CoapResource {
 
     private URI uri;
 
+    public CoapResource(String _uri, String _element) { // TODO maybe create extra class for simple coap get
+
+        this.createCoapClient(_uri + _element);
+        // this.observeResource();
+    }
+
     public CoapResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler) {
 
         this.channelId = _channel;
@@ -136,6 +142,7 @@ public class CoapResource {
             @Override
             public void onError() {
                 logger.info("OBSERVING FAILED");
+                // TODO forward error to thinghandler to set status to offline
             }
         };
 

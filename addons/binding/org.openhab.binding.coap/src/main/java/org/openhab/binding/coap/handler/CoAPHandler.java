@@ -159,6 +159,11 @@ public class CoAPHandler extends BaseThingHandler {
                 coapResourceList.add(newResource);
             }
 
+            if (dtlsEnabled) {
+            } else {
+                getThing().setLabel(new CoapResource(thingUri, "id").readResource());
+            }
+
             // observeStringResource("coap://[2001:db8::225:19ff:fe64:c216]:5683/lights/led3", CHANNEL_STRING1);
 
             // Long running initialization should be done asynchronously in background.
