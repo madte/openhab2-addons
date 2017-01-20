@@ -19,9 +19,9 @@ import org.openhab.binding.coap.handler.CoAPHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CoapResource {
+public class DeviceResource {
 
-    private Logger logger = LoggerFactory.getLogger(CoapResource.class);
+    private Logger logger = LoggerFactory.getLogger(DeviceResource.class);
 
     private DTLSConnector dtlsConnector;
     private CoapClient coapClient;
@@ -34,23 +34,21 @@ public class CoapResource {
 
     private URI uri;
 
-    public CoapResource(String _uri, String _element) { // TODO maybe create extra class for simple coap get
+    public DeviceResource(String _uri, String _element) { // TODO maybe create extra class for simple coap get
 
         this.createCoapClient(_uri + _element);
-        // this.observeResource();
     }
 
-    public CoapResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler) {
+    public DeviceResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler) {
 
         this.channelId = _channel;
         this.channelType = _type;
         this.coapHandler = _coapHandler;
 
         this.createCoapClient(_uri + _channel);
-        // this.observeResource();
     }
 
-    public CoapResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler, String _clientIdentity,
+    public DeviceResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler, String _clientIdentity,
             String _secretPsk) {
 
         this(_uri, _channel, _type, _coapHandler);

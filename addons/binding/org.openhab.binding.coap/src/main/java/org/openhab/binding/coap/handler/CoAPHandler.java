@@ -22,7 +22,8 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.coap.internal.client.CoapResource;
+import org.openhab.binding.coap.internal.DeviceInfoReceiver;
+import org.openhab.binding.coap.internal.client.DeviceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +38,13 @@ public class CoAPHandler extends BaseThingHandler {
     private Logger logger = LoggerFactory.getLogger(CoAPHandler.class);
 
     private String thingUri;
-    private String identity;
-    private String secret;
+    private String hostname;
+    private String dtlsIdentity;
+    private String dtlsPsk;
     private Boolean dtlsEnabled = false;
 
-    private List<CoapResource> coapResourceList = new ArrayList<CoapResource>();
+    private List<DeviceResource> coapResourceList = new ArrayList<DeviceResource>();
+    private DeviceInfoReceiver deviceInfoReceiver;
 
     public CoAPHandler(Thing thing) {
         super(thing);
@@ -51,11 +54,11 @@ public class CoAPHandler extends BaseThingHandler {
     public void handleCommand(ChannelUID channelUID, Command command) {
         Boolean commandExecuted = false;
 
-        if (command.toFullString().contentEquals("REFRESH")) {
+        if (command.toFullString().contentEquals("REFRESH")) { // TODO check where this command comes from
             return;
         }
 
-        for (CoapResource resource : coapResourceList) {
+        for (DeviceResource resource : coapResourceList) {
 
             if (channelUID.getId().contentEquals(resource.getChannelId())) {
                 logger.debug(
@@ -111,18 +114,19 @@ public class CoAPHandler extends BaseThingHandler {
 
         if (conf.containsKey(CONFIG_IP_KEY)) {
             thingUri = buildCoapThingUri(conf.get(CONFIG_IP_KEY).toString());
+            hostname = conf.get(CONFIG_IP_KEY).toString();
         } else {
             validConfig = false;
         }
 
         if (conf.containsKey(CONFIG_IDENTITY_KEY)) {
-            identity = conf.get(CONFIG_IDENTITY_KEY).toString();
+            dtlsIdentity = conf.get(CONFIG_IDENTITY_KEY).toString();
         } else {
             validConfig = false;
         }
 
         if (conf.containsKey(CONFIG_SECRET_KEY)) {
-            secret = conf.get(CONFIG_SECRET_KEY).toString();
+            dtlsPsk = conf.get(CONFIG_SECRET_KEY).toString();
         } else {
             validConfig = false;
         }
@@ -140,28 +144,28 @@ public class CoAPHandler extends BaseThingHandler {
     public void initialize() {
 
         if (readThingConfiguration()) {
+
+            // receive end-device information
+            deviceInfoReceiver = new DeviceInfoReceiver(hostname);
+            getThing().setLabel(deviceInfoReceiver.getId());
+
             // update channel states
             for (Channel channel : getThing().getChannels()) {
                 // temp = channel.getLabel(); // Led1
                 // temp = channel.getUID().getId();// led1
                 // temp = channel.getAcceptedItemType();// Switch
-                CoapResource newResource;
+                DeviceResource newResource;
 
                 if (dtlsEnabled) {
-                    newResource = new CoapResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
-                            this, identity, secret);
+                    newResource = new DeviceResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
+                            this, dtlsIdentity, dtlsPsk);
                 } else {
-                    newResource = new CoapResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
+                    newResource = new DeviceResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
                             this);
                 }
 
                 newResource.observeResource();
                 coapResourceList.add(newResource);
-            }
-
-            if (dtlsEnabled) {
-            } else {
-                getThing().setLabel(new CoapResource(thingUri, "id").readResource());
             }
 
             // observeStringResource("coap://[2001:db8::225:19ff:fe64:c216]:5683/lights/led3", CHANNEL_STRING1);
