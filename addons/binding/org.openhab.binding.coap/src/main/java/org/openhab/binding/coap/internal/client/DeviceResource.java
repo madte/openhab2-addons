@@ -1,6 +1,5 @@
 package org.openhab.binding.coap.internal.client;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -13,9 +12,7 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.scandium.DTLSConnector;
-import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
-import org.eclipse.californium.scandium.dtls.pskstore.StaticPskStore;
-import org.openhab.binding.coap.handler.CoAPHandler;
+import org.openhab.binding.coap.handler.DeviceResourceObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +22,8 @@ public class DeviceResource {
 
     private DTLSConnector dtlsConnector;
     private CoapClient coapClient;
-    private CoapHandler resourceHandler;
-    private CoAPHandler coapHandler;
+    private CoapHandler coapNotificationHandler;
+    private DeviceResourceObserver deviceResourceObserver;
     private CoapObserveRelation observeRelation;
 
     private String channelId;
@@ -39,28 +36,17 @@ public class DeviceResource {
         this.createCoapClient(_uri + _element);
     }
 
-    public DeviceResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler) {
+    public DeviceResource(String _uri, String _channel, String _type) {
 
         this.channelId = _channel;
         this.channelType = _type;
-        this.coapHandler = _coapHandler;
 
         this.createCoapClient(_uri + _channel);
     }
 
-    public DeviceResource(String _uri, String _channel, String _type, CoAPHandler _coapHandler, String _clientIdentity,
-            String _secretPsk) {
-
-        this(_uri, _channel, _type, _coapHandler);
-        // load key store
-        StaticPskStore keyStore;
-
-        keyStore = new StaticPskStore(_clientIdentity, _secretPsk.getBytes());
-        DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder(new InetSocketAddress(0));
-        builder.setPskStore(keyStore);
-
-        dtlsConnector = new DTLSConnector(builder.build()); // TODO think about creating
-        // dtlsConnector only once per thing
+    public DeviceResource(String _deviceUri, String _id, String _type, DTLSConnector _dtlsConnector) {
+        // TODO Auto-generated constructor stub
+        this(_deviceUri, _id, _type);
         this.coapClient.setEndpoint(new CoapEndpoint(this.dtlsConnector, NetworkConfig.getStandard()));
     }
 
@@ -128,13 +114,13 @@ public class DeviceResource {
 
     public String observeResource() {
 
-        this.resourceHandler = new CoapHandler() {
+        this.coapNotificationHandler = new CoapHandler() {
             @Override
             public void onLoad(CoapResponse response) {
                 logger.debug("Notification from: " + coapClient.getURI());
                 logger.debug(Utils.prettyPrint(response));
                 String content = response.getResponseText();
-                coapHandler.handleCoapNotification(channelId, channelType, content);
+                deviceResourceObserver.handleDeviceResourceNotification(channelId, channelType, content);
             }
 
             @Override
@@ -144,7 +130,7 @@ public class DeviceResource {
             }
         };
 
-        this.observeRelation = this.coapClient.observe(this.resourceHandler);
+        this.observeRelation = this.coapClient.observe(this.coapNotificationHandler);
         return null;
     }
 

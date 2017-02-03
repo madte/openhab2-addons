@@ -28,7 +28,10 @@ public class CoAPBindingConstants {
     public final static String CHANNEL_STRING1 = "string1";
 
     // List of configuration keys
-    public final static String CONFIG_DTLSENABLED_KEY = "enableDtls";
+    public final static String CONFIG_DTLSMODE_KEY = "dtlsMode";
+    public final static String CONFIG_DTLSMODE_PSK = "dtlsModePsk";
+    public final static String CONFIG_DTLSMODE_RAWPUBLICKEY = "dtlsModeRpk";
+
     public final static String CONFIG_IDENTITY_KEY = "identity";
     public final static String CONFIG_SECRET_KEY = "secret";
     public final static String CONFIG_IP_KEY = "ip";

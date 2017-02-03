@@ -23,19 +23,19 @@
             <description>IP of the CoAP thing (or hostname)
             </description>
         </parameter>
-        <parameter name="enableDtls" type="text" required="true">
-            <label>DTLS enabled</label>
-            <description> To enable DTLS set true, else false
+        <parameter name="dtlsMode" type="text" required="true">
+            <label>DTLS Mode</label>
+            <description> Supported modes are Pre-shared Key: "dtlsModePsk" and Raw Public Key "dtlsModeRpk"
             </description>
         </parameter>
         <parameter name="identity" type="text">
             <label>DTLS identity</label>
-            <description> Identity of the DTLS end-device (only needed when DTLS enabled)
+            <description> Identity of the DTLS end-device (only needed with DTLS mode "dtlsModePsk")
             </description>
         </parameter>
         <parameter name="secret" type="text">
             <label>DTLS secret</label>
-            <description> Shared secret with DTLS end-device (only needed when DTLS enabled)
+            <description> Shared secret with DTLS end-device (only needed when DTLS mode "dtlsModePsk")
             </description>
         </parameter>
         <parameter name="location" type="text" required="true">

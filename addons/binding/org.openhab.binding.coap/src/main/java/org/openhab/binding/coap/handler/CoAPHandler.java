@@ -9,9 +9,6 @@ package org.openhab.binding.coap.handler;
 
 import static org.openhab.binding.coap.CoAPBindingConstants.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.smarthome.config.core.Configuration;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.StringType;
@@ -22,8 +19,10 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
+import org.openhab.binding.coap.internal.Crypto;
 import org.openhab.binding.coap.internal.DeviceInfoReceiver;
 import org.openhab.binding.coap.internal.client.DeviceResource;
+import org.openhab.binding.coap.internal.client.DeviceResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,18 +32,19 @@ import org.slf4j.LoggerFactory;
  *
  * @author Martin Kessel - Initial contribution
  */
-public class CoAPHandler extends BaseThingHandler {
+public class CoAPHandler extends BaseThingHandler implements DeviceResourceObserver {
 
     private Logger logger = LoggerFactory.getLogger(CoAPHandler.class);
 
     private String thingUri;
     private String hostname;
+    private String dtlsMode;
     private String dtlsIdentity;
     private String dtlsPsk;
-    private Boolean dtlsEnabled = false;
+    private Boolean dtlsEnabled = true;
 
-    private List<DeviceResource> coapResourceList = new ArrayList<DeviceResource>();
     private DeviceInfoReceiver deviceInfoReceiver;
+    private DeviceResourceManager deviceResourceManager;
 
     public CoAPHandler(Thing thing) {
         super(thing);
@@ -52,25 +52,20 @@ public class CoAPHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        Boolean commandExecuted = false;
+        DeviceResource tempDeviceResource = null;
 
         if (command.toFullString().contentEquals("REFRESH")) { // TODO check where this command comes from
             return;
         }
 
-        for (DeviceResource resource : coapResourceList) {
+        tempDeviceResource = deviceResourceManager.getDeviceResourceById(channelUID.getId());
+        if (tempDeviceResource != null) {
 
-            if (channelUID.getId().contentEquals(resource.getChannelId())) {
-                logger.debug(
-                        "handleCommand: On channel: " + channelUID.getId() + " command: " + command.toFullString());
-                if (resource.writeResource(command.toFullString())) {
-                    commandExecuted = true;
-                    updateStatus(ThingStatus.ONLINE);
-                    return;
-                }
-            }
-        }
-        if (!commandExecuted) {
+            tempDeviceResource.writeResource(command.toFullString());
+            logger.debug("handleCommand: On channel: " + channelUID.getId() + " command: " + command.toFullString());
+            updateStatus(ThingStatus.ONLINE);
+
+        } else { // deviceResource not found
             logger.debug("Channel " + channelUID.getId() + " has no CoapResource assigned!");
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
 
@@ -78,7 +73,8 @@ public class CoAPHandler extends BaseThingHandler {
 
     }
 
-    public void handleCoapNotification(String _channelId, String _channelType, String _value) {
+    @Override
+    public void handleDeviceResourceNotification(String _channelId, String _channelType, String _value) {
 
         if (_channelType.contentEquals("String")) {
             logger.info("String resource: " + _channelType + " changed to: " + _value);
@@ -106,8 +102,8 @@ public class CoAPHandler extends BaseThingHandler {
         boolean validConfig = true;
         Configuration conf = this.getConfig();
 
-        if (conf.containsKey(CONFIG_DTLSENABLED_KEY)) {
-            dtlsEnabled = Boolean.parseBoolean(conf.get(CONFIG_DTLSENABLED_KEY).toString());
+        if (conf.containsKey(CONFIG_DTLSMODE_KEY)) {
+            dtlsMode = conf.get(CONFIG_DTLSMODE_KEY).toString();
         } else {
             validConfig = false;
         }
@@ -149,23 +145,22 @@ public class CoAPHandler extends BaseThingHandler {
             deviceInfoReceiver = new DeviceInfoReceiver(hostname);
             getThing().setLabel(deviceInfoReceiver.getId());
 
+            if (dtlsMode.equals(CONFIG_DTLSMODE_PSK)) {
+                deviceResourceManager = new DeviceResourceManager(thingUri, dtlsIdentity, dtlsPsk);
+            } else if (dtlsMode.equals(CONFIG_DTLSMODE_RAWPUBLICKEY)) {
+                deviceResourceManager = new DeviceResourceManager(thingUri, Crypto.generateEcdsaKeypair("secp256r1"));
+            } else {
+                deviceResourceManager = new DeviceResourceManager(thingUri);
+                dtlsEnabled = false;
+            }
+
             // update channel states
             for (Channel channel : getThing().getChannels()) {
                 // temp = channel.getLabel(); // Led1
                 // temp = channel.getUID().getId();// led1
                 // temp = channel.getAcceptedItemType();// Switch
-                DeviceResource newResource;
 
-                if (dtlsEnabled) {
-                    newResource = new DeviceResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
-                            this, dtlsIdentity, dtlsPsk);
-                } else {
-                    newResource = new DeviceResource(thingUri, channel.getUID().getId(), channel.getAcceptedItemType(),
-                            this);
-                }
-
-                newResource.observeResource();
-                coapResourceList.add(newResource);
+                deviceResourceManager.addDeviceResource(channel.getUID().getId(), channel.getAcceptedItemType());
             }
 
             // observeStringResource("coap://[2001:db8::225:19ff:fe64:c216]:5683/lights/led3", CHANNEL_STRING1);
@@ -188,9 +183,9 @@ public class CoAPHandler extends BaseThingHandler {
     @Override
     public void dispose() {
 
-        // delete all coap resources
-        coapResourceList.clear();
-
+        // indirectly destroy objects (gc)
+        deviceResourceManager = null;
+        deviceInfoReceiver = null;
     }
 
 }
