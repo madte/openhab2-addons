@@ -85,7 +85,7 @@ public class CoAPHandler extends BaseThingHandler implements DeviceResourceObser
         }
     }
 
-    private String buildCoapThingUri(String _hostname) {
+    private String buildCoapThingUri(String _hostname) { // TODO move this to DeviceResourceManager
 
         String uriTemp = new String();
 
@@ -104,6 +104,14 @@ public class CoAPHandler extends BaseThingHandler implements DeviceResourceObser
 
         if (conf.containsKey(CONFIG_DTLSMODE_KEY)) {
             dtlsMode = conf.get(CONFIG_DTLSMODE_KEY).toString();
+            if (dtlsMode.equals(CONFIG_DTLSMODE_PSK)) { // TODO improve differentiation between dtls enabled/disabled
+                dtlsEnabled = true;
+            } else if (dtlsMode.equals(CONFIG_DTLSMODE_RAWPUBLICKEY)) {
+                dtlsEnabled = true;
+            } else {
+                dtlsEnabled = false;
+            }
+
         } else {
             validConfig = false;
         }
@@ -146,12 +154,12 @@ public class CoAPHandler extends BaseThingHandler implements DeviceResourceObser
             getThing().setLabel(deviceInfoReceiver.getId());
 
             if (dtlsMode.equals(CONFIG_DTLSMODE_PSK)) {
-                deviceResourceManager = new DeviceResourceManager(thingUri, dtlsIdentity, dtlsPsk);
+                deviceResourceManager = new DeviceResourceManager(thingUri, this, dtlsIdentity, dtlsPsk);
             } else if (dtlsMode.equals(CONFIG_DTLSMODE_RAWPUBLICKEY)) {
-                deviceResourceManager = new DeviceResourceManager(thingUri, Crypto.generateEcdsaKeypair("secp256r1"));
+                deviceResourceManager = new DeviceResourceManager(thingUri, this,
+                        Crypto.generateEcdsaKeypair("secp256r1"));
             } else {
-                deviceResourceManager = new DeviceResourceManager(thingUri);
-                dtlsEnabled = false;
+                deviceResourceManager = new DeviceResourceManager(thingUri, this);
             }
 
             // update channel states

@@ -20,7 +20,7 @@ public class DeviceResource {
 
     private Logger logger = LoggerFactory.getLogger(DeviceResource.class);
 
-    private DTLSConnector dtlsConnector;
+    // private DTLSConnector dtlsConnector;
     private CoapClient coapClient;
     private CoapHandler coapNotificationHandler;
     private DeviceResourceObserver deviceResourceObserver;
@@ -31,23 +31,25 @@ public class DeviceResource {
 
     private URI uri;
 
-    public DeviceResource(String _uri, String _element) { // TODO maybe create extra class for simple coap get
+    public DeviceResource(String _uri, String _element) {
 
         this.createCoapClient(_uri + _element);
     }
 
-    public DeviceResource(String _uri, String _channel, String _type) {
+    public DeviceResource(String _uri, String _channel, String _type, DeviceResourceObserver _deviceResourceObserver) {
 
         this.channelId = _channel;
         this.channelType = _type;
+        this.deviceResourceObserver = _deviceResourceObserver;
 
         this.createCoapClient(_uri + _channel);
     }
 
-    public DeviceResource(String _deviceUri, String _id, String _type, DTLSConnector _dtlsConnector) {
+    public DeviceResource(String _deviceUri, String _id, String _type, DTLSConnector _dtlsConnector,
+            DeviceResourceObserver _deviceResourceObserver) {
         // TODO Auto-generated constructor stub
-        this(_deviceUri, _id, _type);
-        this.coapClient.setEndpoint(new CoapEndpoint(this.dtlsConnector, NetworkConfig.getStandard()));
+        this(_deviceUri, _id, _type, _deviceResourceObserver);
+        this.coapClient.setEndpoint(new CoapEndpoint(_dtlsConnector, NetworkConfig.getStandard()));
     }
 
     @Override
@@ -69,6 +71,7 @@ public class DeviceResource {
         try {
             this.uri = new URI(_uri);
             this.coapClient = new CoapClient(uri);
+            logger.debug("Created coap client for URI: " + _uri);
         } catch (URISyntaxException e) {
             logger.debug("Invalid URI: " + e.getMessage());
             System.exit(-1); // TODO change to something more appropriate
@@ -77,11 +80,12 @@ public class DeviceResource {
 
     public String readResource() {
 
+        logger.debug("GET to: " + coapClient.getURI());
         CoapResponse response = this.coapClient.get();
 
         if (response != null) {
 
-            logger.debug(response.getResponseText());
+            logger.debug("Response of GET from: " + coapClient.getURI() + " with value: " + response.getResponseText());
             logger.debug("\nADVANCED\n");
             // access advanced API with access to more details through .advanced()
             logger.debug(Utils.prettyPrint(response));
@@ -95,11 +99,11 @@ public class DeviceResource {
 
     public Boolean writeResource(String _value) {
 
+        logger.debug("PUT to: " + coapClient.getURI() + " with value: " + _value);
         CoapResponse response = this.coapClient.put(_value, MediaTypeRegistry.TEXT_PLAIN);
 
         if (response != null) {
-
-            logger.debug(response.getResponseText());
+            logger.debug("Response of PUT from: " + coapClient.getURI() + " with value: " + response.getResponseText());
             logger.debug("\nADVANCED\n");
             // access advanced API with access to more details through .advanced()
             logger.debug(Utils.prettyPrint(response));
@@ -115,11 +119,13 @@ public class DeviceResource {
     public String observeResource() {
 
         this.coapNotificationHandler = new CoapHandler() {
+
             @Override
             public void onLoad(CoapResponse response) {
-                logger.debug("Notification from: " + coapClient.getURI());
-                logger.debug(Utils.prettyPrint(response));
                 String content = response.getResponseText();
+                logger.debug("Notification from: " + coapClient.getURI() + " with value: " + content);
+                logger.debug("\nADVANCED\n");
+                logger.debug(Utils.prettyPrint(response));
                 deviceResourceObserver.handleDeviceResourceNotification(channelId, channelType, content);
             }
 

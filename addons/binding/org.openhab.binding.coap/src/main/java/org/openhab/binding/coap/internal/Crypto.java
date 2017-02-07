@@ -45,4 +45,10 @@ public class Crypto {
         return kp;
 
     }
+
+    public static KeyPair generateKeypair() {
+        return null;
+
+    }
+
 }
