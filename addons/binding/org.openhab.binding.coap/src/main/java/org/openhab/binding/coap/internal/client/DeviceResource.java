@@ -13,6 +13,7 @@ import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.openhab.binding.coap.handler.DeviceResourceObserver;
+import org.openhab.binding.coap.handler.DeviceResourceObserverInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class DeviceResource {
     // private DTLSConnector dtlsConnector;
     private CoapClient coapClient;
     private CoapHandler coapNotificationHandler;
-    private DeviceResourceObserver deviceResourceObserver;
+    private DeviceResourceObserverInstance deviceResourceObserver = new DeviceResourceObserverInstance();
     private CoapObserveRelation observeRelation;
 
     private String channelId;
@@ -40,7 +41,7 @@ public class DeviceResource {
 
         this.channelId = _channel;
         this.channelType = _type;
-        this.deviceResourceObserver = _deviceResourceObserver;
+        // this.deviceResourceObserver = _deviceResourceObserver;
 
         this.createCoapClient(_uri + _channel);
     }
@@ -126,7 +127,8 @@ public class DeviceResource {
                 logger.debug("Notification from: " + coapClient.getURI() + " with value: " + content);
                 logger.debug("\nADVANCED\n");
                 logger.debug(Utils.prettyPrint(response));
-                deviceResourceObserver.handleDeviceResourceNotification(channelId, channelType, content);
+                DeviceResourceObserverInstance.getDeviceResourceObserverInstance()
+                        .handleDeviceResourceNotification(channelId, channelType, content);
             }
 
             @Override

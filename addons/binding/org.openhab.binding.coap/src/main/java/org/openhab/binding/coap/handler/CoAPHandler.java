@@ -48,6 +48,7 @@ public class CoAPHandler extends BaseThingHandler implements DeviceResourceObser
 
     public CoAPHandler(Thing thing) {
         super(thing);
+        new DeviceResourceObserverInstance(this);
     }
 
     @Override
