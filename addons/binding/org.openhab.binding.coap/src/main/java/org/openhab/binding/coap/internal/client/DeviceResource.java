@@ -138,7 +138,7 @@ public class DeviceResource {
             }
         };
 
-        this.observeRelation = this.coapClient.observe(this.coapNotificationHandler);
+        this.observeRelation = this.coapClient.observe(this.coapNotificationHandler, 50);
         return null;
     }
 

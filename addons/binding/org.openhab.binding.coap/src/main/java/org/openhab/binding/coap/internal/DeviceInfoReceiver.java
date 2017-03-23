@@ -22,12 +22,16 @@ public class DeviceInfoReceiver {
 
     private Gson gson = new Gson();
 
+    /**
+     * @return create coapInfoReceiver object
+     */
     private void createInfoCoapClient(String _hostname) {
-
         this.coapClient = new CoapClient("coap", _hostname, COAP_INFO_PORT, "info");
-
     }
 
+    /**
+     * @return read device info object from coap infoServer
+     */
     private String read() {
 
         CoapResponse response = this.coapClient.get();
@@ -43,7 +47,7 @@ public class DeviceInfoReceiver {
     }
 
     /**
-     * @return the id
+     * @return the device id
      */
     public String getId() {
         return deviceInfo.id;
